@@ -51,9 +51,11 @@ class StaveLineSelectorGUI:
             existing_line_y = existing_line.get_y()
             existing_line_height = existing_line.get_height()
             existing_line_color = existing_line.get_facecolor()
+            existing_visibility = existing_line.get_visible()
 
             curr_line = patches.Rectangle((0, existing_line_y), self.img_width, existing_line_height,
-                                          color=existing_line_color)
+                                          color=existing_line_color,
+                                          visible=existing_visibility)
 
             self.line_to_row_map[curr_line] = deepcopy(existing_obj.line_to_row_map[existing_line])
             for r in self.line_to_row_map[curr_line]:
@@ -390,8 +392,10 @@ def check_stave_line_validity(line_top_edge_rows, line_bottom_edge_rows,
 
 def interactive_stave_line_process(page_obj, stave_group_size=1):
 
+    stave_gui = None
+
     while True:
-        stave_gui = open_and_close_interactive_gui(page_obj)
+        stave_gui = open_and_close_interactive_gui(page_obj, stave_gui)
         line_top_edge_rows, line_bottom_edge_rows = stave_gui.get_line_row_indices()
         are_lines_valid = check_stave_line_validity(line_top_edge_rows, line_bottom_edge_rows,
                                                     stave_group_size)
