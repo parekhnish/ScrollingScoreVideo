@@ -7,6 +7,11 @@ import matplotlib.patches as patches
 SG_OVERLAY_COLOR = "teal"
 SG_OVERLAY_ALPHA = 0.3
 
+BAR_OVERLAY_EVEN_COLOR = "mediumorchid"
+BAR_OVERLAY_ODD_COLOR = "seagreen"
+BAR_OVERLAY_ALPHA = 0.25
+
+
 
 class Page:
 
@@ -80,25 +85,43 @@ class Page:
 
         for sg in self.sg_list:
 
-            if sg.left_lim_col is None:
-                left_col = 0
-            else:
-                left_col = sg.left_lim_col
-
-            if sg.right_lim_col is None:
-                right_col = self.page_width - 1
-            else:
-                right_col = sg.right_lim_col
-
             top_row = sg.top_lim_row
             bottom_row = sg.bottom_lim_row
 
-            curr_sg_overlay = patches.Rectangle((left_col-1, top_row-1),
-                                                right_col-left_col + 1,
-                                                bottom_row-top_row + 1,
-                                                color=SG_OVERLAY_COLOR,
-                                                alpha=SG_OVERLAY_ALPHA)
-            ax.add_patch(curr_sg_overlay)
+            if sg.num_bars > 0:
+                for bar_idx, bar in enumerate(sg.bar_list):
+                    left_col = bar.inner_left_col
+                    right_col = bar.inner_right_col
+
+                    if (bar_idx % 2) == 0:
+                        curr_color = BAR_OVERLAY_EVEN_COLOR
+                    else:
+                        curr_color = BAR_OVERLAY_ODD_COLOR
+
+                    curr_bar_overlay = patches.Rectangle((left_col - 1, top_row - 1),
+                                                         right_col - left_col + 1,
+                                                         bottom_row - top_row + 1,
+                                                         color=curr_color,
+                                                         alpha=BAR_OVERLAY_ALPHA)
+                    ax.add_patch(curr_bar_overlay)
+
+            else:
+                if sg.left_lim_col is None:
+                    left_col = 0
+                else:
+                    left_col = sg.left_lim_col
+
+                if sg.right_lim_col is None:
+                    right_col = self.page_width - 1
+                else:
+                    right_col = sg.right_lim_col
+
+                curr_sg_overlay = patches.Rectangle((left_col-1, top_row-1),
+                                                    right_col-left_col + 1,
+                                                    bottom_row-top_row + 1,
+                                                    color=SG_OVERLAY_COLOR,
+                                                    alpha=SG_OVERLAY_ALPHA)
+                ax.add_patch(curr_sg_overlay)
 
         plt.show()
         plt.close()

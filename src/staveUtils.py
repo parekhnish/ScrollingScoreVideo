@@ -31,6 +31,7 @@ class StaveGroup:
 
     def __init__(self,
                  stave_list=None,
+                 bar_list=None,
                  parent_page=None):
 
         self.assign_parent_page(parent_page)
@@ -40,7 +41,13 @@ class StaveGroup:
         else:
             self.stave_list = stave_list
 
+        if bar_list is None:
+            self.bar_list = []
+        else:
+            self.bar_list = bar_list
+
         self.num_staves = len(self.stave_list)
+        self.num_bars = len(self.bar_list)
 
         self.assign_parent_to_all_child_staves()
         self.determine_left_right_cols()
@@ -48,6 +55,17 @@ class StaveGroup:
 
 
         return
+
+
+    def delete_bar_list(self):
+
+        self.bar_list = []
+        self.num_bars = 0
+        self.determine_top_bottom_rows()
+        self.determine_left_right_cols()
+
+        return
+
 
     def assign_parent_to_all_child_staves(self):
 
@@ -70,9 +88,17 @@ class StaveGroup:
 
     def determine_left_right_cols(self):
 
-        if self.num_staves > 0:
-            self.left_lim_col = min([stave.left_lim_col for stave in self.stave_list])
-            self.right_lim_col = max([stave.right_lim_col for stave in self.stave_list])
+        # If bars are available, use them
+        if self.num_bars > 0:
+            self.left_lim_col = self.bar_list[0].outer_left_col
+            self.right_lim_col = self.bar_list[-1].outer_right_col
+
+        # Else, if staves are available, use them
+        elif self.num_staves > 0:
+            self.left_lim_col = self.stave_list[0].left_lim_col
+            self.right_lim_col = self.stave_list[-1].right_lim_col
+
+        # Else, use the defaults
         else:
             self.left_lim_col = None
             self.right_lim_col = None
@@ -119,5 +145,43 @@ class StaveGroup:
         self.determine_left_right_cols()
         self.determine_top_bottom_rows()
         self.num_staves += 1
+
+        return
+
+
+    def add_bar(self, new_bar):
+
+        if self.num_bars == 0:
+            insert_pos = 0
+
+        else:
+            existing_bar_inner_left_cols = [ex_bar.inner_left_col for ex_bar in self.bar_list]
+            existing_bar_inner_right_cols = [ex_bar.inner_right_col for ex_bar in self.bar_list]
+
+            new_bar_inner_left_col = new_bar.inner_left_col
+            new_bar_inner_right_col = new_bar.inner_right_col
+
+            # Check that the new bar does not overlap with existing bar!
+            for ex_inner_left, ex_inner_right in zip(existing_bar_inner_left_cols, existing_bar_inner_right_cols):
+                if ((ex_inner_left <= new_bar_inner_left_col <= ex_inner_right) or
+                    (ex_inner_left <= new_bar_inner_right_col <= ex_inner_right)):
+                    raise Exception("New bar ({}, {}) overlaps existing bar ({}, {})!".format(
+                        new_bar_inner_left_col, new_bar_inner_right_col,
+                        ex_inner_left, ex_inner_right
+                    ))
+
+            insert_pos = 0
+            for ex_inner_left in existing_bar_inner_left_cols:
+                if new_bar_inner_left_col < ex_inner_left:
+                    break
+                else:
+                    insert_pos += 1
+
+
+        self.bar_list.insert(insert_pos, new_bar)
+        new_bar.assign_parent_sg(self)
+        self.determine_left_right_cols()
+        self.determine_top_bottom_rows()
+        self.num_bars += 1
 
         return

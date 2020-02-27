@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+from barUtils import Bar
+
 
 BAR_LINE_GUI_CONFIDENT_COLOR = "mediumblue"
 BAR_LINE_GUI_DOUBTFUL_COLOR = "coral"
@@ -626,40 +628,37 @@ def interactive_bar_selector_process(page_obj):
     while True:
         bar_selector_gui = open_and_close_interactive_gui(page_obj, bar_selector_gui)
         list_of_bar_line_left_edge_col_arrays, list_of_bar_line_right_edge_col_arrays = bar_selector_gui.get_bar_line_col_indices()
-        print("NUM BARS: ")
-        for idx, arr in enumerate(list_of_bar_line_left_edge_col_arrays):
-            print("{}:\t{}".format(idx, len(arr)))
-        print("\n\n")
 
-        # if not are_lines_valid:
-        #     resp = input("Number of Stave lines are not in accordance with the number of staves in a group! Do you want to try again? (Y/N): ")
-        #     if resp == "Y":
-        #         continue
-        #     else:
-        #         break
-        #
-        #
-        # num_lines = len(line_top_edge_rows)
-        # num_staves = int(num_lines / 5)
-        # num_sg = int(num_staves / stave_group_size)
-        #
-        # list_staves = []
-        # for stave_idx in range(num_staves):
-        #     curr_stave_top_row_list = line_top_edge_rows[stave_idx*5: (stave_idx+1)*5]
-        #     curr_stave_bottom_row_list = line_bottom_edge_rows[stave_idx*5: (stave_idx+1) * 5]
-        #     list_staves.append(Stave(curr_stave_top_row_list, curr_stave_bottom_row_list,
-        #                              left_lim_col=0, right_lim_col=page_obj.page_width))
-        #
-        # if page_obj.num_sg > 0:
-        #     page_obj.delete_sg_list()
-        #
-        # for sg_idx in range(num_sg):
-        #     curr_stave_list = list_staves[sg_idx*stave_group_size: (sg_idx+1)*stave_group_size]
-        #     page_obj.add_stave_group(StaveGroup(curr_stave_list,
-        #                                         parent_page=page_obj))
-        #
-        # page_obj.show_overlays()
+        # for idx, arr in enumerate(list_of_bar_line_left_edge_col_arrays):
+        #     print("{}:\t{}".format(idx, len(arr)))
+        # print("\n\n")
 
+
+        num_stave_groups = page_obj.num_sg
+        for sg_idx in range(num_stave_groups):
+
+            curr_sg = page_obj.sg_list[sg_idx]
+            if curr_sg.num_bars > 0:
+                curr_sg.delete_bar_list()
+
+            curr_left_col_array = list_of_bar_line_left_edge_col_arrays[sg_idx]
+            curr_right_col_array = list_of_bar_line_right_edge_col_arrays[sg_idx]
+            num_bars = len(curr_left_col_array) - 1
+
+            for bar_idx in range(num_bars):
+
+                outer_left_col = curr_left_col_array[bar_idx]
+                inner_left_col = curr_right_col_array[bar_idx]
+                inner_right_col = curr_left_col_array[bar_idx+1]
+                outer_right_col = curr_right_col_array[bar_idx+1]
+
+                curr_bar = Bar(inner_left_col, inner_right_col,
+                               outer_left_col, outer_right_col)
+                curr_sg.add_bar(curr_bar)
+
+        page_obj.show_overlays()
+
+        success = False
         resp = input("Do the bars look good?"
                      "(Y): Continue"
                      "(N): Go back to the bar line selection screen"
@@ -667,7 +666,8 @@ def interactive_bar_selector_process(page_obj):
         if resp == "N":
             continue
         else:
+            success = True
             break
 
 
-    return
+    return success
