@@ -1,5 +1,7 @@
-from skimage.color import rgb2gray
+import os
 
+from skimage.color import rgb2gray
+from imageio import imread
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -15,10 +17,11 @@ BAR_OVERLAY_ALPHA = 0.25
 
 class Page:
 
-    def __init__(self, orig_image,
+    def __init__(self, orig_image_filepath,
                  sg_list=None):
 
-        self.orig_image = orig_image
+        self.orig_image_filename = os.path.basename(orig_image_filepath)
+        self.orig_image = imread(orig_image_filepath)
         self.bin_image = binarize_image(self.orig_image, thresh=254)
 
         self.page_height = self.orig_image.shape[0]
