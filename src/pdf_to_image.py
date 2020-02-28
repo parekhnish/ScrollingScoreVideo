@@ -35,8 +35,8 @@ def get_page_size(input_pdf_filepath):
                 # "<width> x <height>"; thus, by searching for the token "x",
                 # we can extract this data
                 if t == "x":
-                    width = int(tokens[idx-1])
-                    height = int(tokens[idx+1])
+                    width = float(tokens[idx-1])
+                    height = float(tokens[idx+1])
                     break
 
     if (width is None) or (height is None):
