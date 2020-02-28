@@ -174,7 +174,7 @@ class StaveGroupWithBarsGUI:
     def copy_bar_lines_from_existing_obj(self, page_bin_img, existing_obj):
 
         self.num_lines = existing_obj.num_lines
-        self.visible_row_list = deepcopy(existing_obj.visible_row_list)
+        self.visible_col_list = deepcopy(existing_obj.visible_col_list)
 
         page_width = page_bin_img.shape[1]
         self.valid_line_list = [None] * page_width
