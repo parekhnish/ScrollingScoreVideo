@@ -36,6 +36,18 @@ class Page:
 
         return
 
+    def to_dict(self):
+
+        self_dict = {
+            "orig_image_filename": self.orig_image_filename,
+            "page_height": self.page_height,
+            "page_width": self.page_width,
+
+            "sg_list": [sg.to_dict() for sg in self.sg_list]
+        }
+
+        return self_dict
+
     def add_stave_group(self, new_sg):
 
         if self.num_sg == 0:

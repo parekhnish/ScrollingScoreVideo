@@ -25,6 +25,18 @@ class Stave:
         return
 
 
+    def to_dict(self):
+
+        self_dict = {
+            "line_top_edge_rows": self.line_top_edge_rows,
+            "line_bottom_edge_rows": self.line_bottom_edge_rows,
+            "left_lim_col": self.left_lim_col,
+            "right_lim_col": self.right_lim_col
+        }
+
+        return self_dict
+
+
 
 
 class StaveGroup:
@@ -55,6 +67,24 @@ class StaveGroup:
 
 
         return
+
+
+    def to_dict(self):
+
+        self_dict = {
+            "top_lim_row": self.top_lim_row,
+            "bottom_lim_row": self.bottom_lim_row,
+            "left_lim_col": self.left_lim_col,
+            "right_lim_col": self.right_lim_col,
+
+            "stave_list": [stave.to_dict() for stave in self.stave_list],
+            "num_staves": self.num_staves,
+
+            "bar_list": [bar.to_dict() for bar in self.bar_list],
+            "num_bars": self.num_bars
+        }
+
+        return self_dict
 
 
     def delete_bar_list(self):
