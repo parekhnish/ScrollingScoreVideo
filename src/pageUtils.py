@@ -36,17 +36,26 @@ class Page:
 
         return
 
-    def to_dict(self):
 
-        self_dict = {
-            "orig_image_filename": self.orig_image_filename,
-            "page_height": self.page_height,
-            "page_width": self.page_width,
+    def to_dict(self, json_compatible=False):
 
-            "sg_list": [sg.to_dict() for sg in self.sg_list]
-        }
+        self_dict = {}
+
+        self_dict["orig_image_filename"] = self.orig_image_filename
+
+        if json_compatible:
+            self_dict["page_height"] = int(self.page_height)
+            self_dict["page_width"] = int(self.page_width)
+
+        else:
+            self_dict["page_height"] = self.page_height
+            self_dict["page_width"] = self.page_width
+
+        self_dict["sg_list"] = [sg.to_dict(json_compatible=json_compatible)
+                                for sg in self.sg_list]
 
         return self_dict
+
 
     def add_stave_group(self, new_sg):
 

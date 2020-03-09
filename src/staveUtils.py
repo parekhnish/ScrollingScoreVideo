@@ -25,14 +25,21 @@ class Stave:
         return
 
 
-    def to_dict(self):
+    def to_dict(self, json_compatible=False):
 
-        self_dict = {
-            "line_top_edge_rows": self.line_top_edge_rows,
-            "line_bottom_edge_rows": self.line_bottom_edge_rows,
-            "left_lim_col": self.left_lim_col,
-            "right_lim_col": self.right_lim_col
-        }
+        self_dict = {}
+
+        if json_compatible:
+            self_dict["line_top_edge_rows"] = [int(r) for r in self.line_top_edge_rows]
+            self_dict["line_bottom_edge_rows"] = [int(r) for r in self.line_bottom_edge_rows]
+            self_dict["left_lim_col"] = int(self.left_lim_col)
+            self_dict["right_lim_col"] = int(self.right_lim_col)
+
+        else:
+            self_dict["line_top_edge_rows"] = self.line_top_edge_rows
+            self_dict["line_bottom_edge_rows"] = self.line_bottom_edge_rows
+            self_dict["left_lim_col"] = self.left_lim_col
+            self_dict["right_lim_col"] = self.right_lim_col
 
         return self_dict
 
@@ -69,20 +76,32 @@ class StaveGroup:
         return
 
 
-    def to_dict(self):
+    def to_dict(self, json_compatible=False):
 
-        self_dict = {
-            "top_lim_row": self.top_lim_row,
-            "bottom_lim_row": self.bottom_lim_row,
-            "left_lim_col": self.left_lim_col,
-            "right_lim_col": self.right_lim_col,
+        self_dict = {}
 
-            "stave_list": [stave.to_dict() for stave in self.stave_list],
-            "num_staves": self.num_staves,
+        if json_compatible:
+            self_dict["top_lim_row"] = int(self.top_lim_row)
+            self_dict["bottom_lim_row"] = int(self.bottom_lim_row)
+            self_dict["left_lim_col"] = int(self.left_lim_col)
+            self_dict["right_lim_col"] = int(self.right_lim_col)
 
-            "bar_list": [bar.to_dict() for bar in self.bar_list],
-            "num_bars": self.num_bars
-        }
+            self_dict["num_staves"] = int(self.num_staves)
+            self_dict["num_bars"] = int(self.num_bars)
+
+        else:
+            self_dict["top_lim_row"] = self.top_lim_row
+            self_dict["bottom_lim_row"] = self.bottom_lim_row
+            self_dict["left_lim_col"] = self.left_lim_col
+            self_dict["right_lim_col"] = self.right_lim_col
+
+            self_dict["num_staves"] = self.num_staves
+            self_dict["num_bars"] = self.num_bars
+
+        self_dict["stave_list"] = [stave.to_dict(json_compatible=json_compatible)
+                                   for stave in self.stave_list]
+        self_dict["bar_list"] = [bar.to_dict(json_compatible=json_compatible)
+                                 for bar in self.bar_list]
 
         return self_dict
 
