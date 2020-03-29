@@ -9,6 +9,7 @@ matplotlib = "*"
 [packages]
 imageio = "*"
 scikit-image = "*"
+av = "*"
 
 [requires]
 python_version = "3.7"
