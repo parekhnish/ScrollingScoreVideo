@@ -1,3 +1,8 @@
+import traceback
+
+from barUtils import Bar
+
+
 class Stave:
 
     def __init__(self,
@@ -18,6 +23,47 @@ class Stave:
         self.right_lim_col = right_lim_col
 
         return
+
+
+    @classmethod
+    def make_object_from_dict(cls, sg_obj, stave_dict):
+        try:
+            are_variables_present = cls.verify_variable_presence_in_dict(stave_dict)
+            if not are_variables_present:
+                print("Variable Presence Verification failed for SG dict")
+                return None
+
+            stave_obj = cls(stave_dict["line_top_edge_rows"],
+                            stave_dict["line_bottom_edge_rows"],
+                            stave_dict["left_lim_col"],
+                            stave_dict["right_lim_col"],
+                            sg_obj)
+            return stave_obj
+
+        except Exception:
+            print("Error when making Stave Object from dict")
+            print(traceback.format_exc())
+            return None
+
+
+    @staticmethod
+    def verify_variable_presence_in_dict(stave_dict):
+
+        try:
+            key_list = ["line_top_edge_rows", "line_bottom_edge_rows",
+                        "left_lim_col", "right_lim_col"]
+
+            for k in key_list:
+                if k not in stave_dict:
+                    print("Key \"{}\" not found in Stave dict".format(k))
+                    raise
+
+        except Exception:
+            print("Error when verifying Stave dict")
+            return False
+
+        return True
+
 
 
     def assign_parent_group(self, pg):
@@ -74,6 +120,65 @@ class StaveGroup:
 
 
         return
+
+
+    @classmethod
+    def make_object_from_dict(cls, page_obj, sg_dict):
+
+        try:
+            are_variables_present = cls.verify_variable_presence_in_dict(sg_dict)
+            if not are_variables_present:
+                print("Variable Presence Verification failed for SG dict")
+                return None
+
+            sg_obj = cls(parent_page=page_obj)
+
+            for stave_dict in sg_dict["stave_list"]:
+                stave_obj = Stave.make_object_from_dict(sg_obj, stave_dict)
+                if stave_obj is not None:
+                    sg_obj.add_stave(stave_obj)
+                else:
+                    return None
+
+            for bar_dict in sg_dict["bar_list"]:
+                bar_obj = Bar.make_object_from_dict(sg_obj, bar_dict)
+                if bar_obj is not None:
+                    sg_obj.add_bar(bar_obj)
+                else:
+                    return None
+
+            # -----
+            # TODO: Check if SG obj is consistent with its child Stave and Bar
+            #       elements
+            # -----
+            return sg_obj
+
+        except Exception:
+            print("Error when making Stave Group Object from dict")
+            print(traceback.format_exc())
+            return None
+
+
+
+    @staticmethod
+    def verify_variable_presence_in_dict(sg_dict):
+
+        try:
+            key_list = ["stave_list", "bar_list"]
+
+            for k in key_list:
+                if k not in sg_dict:
+                    print("Key \"{}\" not found in Stave Group dict".format(k))
+                    return False
+
+        except Exception:
+            print("Error when verifying Stave Group dict")
+            print(traceback.format_exc())
+            return False
+
+        return True
+
+
 
 
     def to_dict(self, json_compatible=False):

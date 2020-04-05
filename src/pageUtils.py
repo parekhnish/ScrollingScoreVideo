@@ -1,9 +1,12 @@
 import os
+import traceback
 
 from skimage.color import rgb2gray
 from imageio import imread
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+
+from staveUtils import StaveGroup
 
 
 SG_OVERLAY_COLOR = "teal"
@@ -17,7 +20,7 @@ BAR_OVERLAY_ALPHA = 0.25
 
 class Page:
 
-    def __init__(self, orig_image_filepath,
+    def __init__(self, orig_image_filepath=None,
                  sg_list=None):
 
         self.orig_image_filename = os.path.basename(orig_image_filepath)
@@ -32,9 +35,63 @@ class Page:
         else:
             self.sg_list = sg_list
 
-        self.num_sg = 0
+        self.num_sg = len(self.sg_list)
 
         return
+
+    @classmethod
+    def make_object_from_dict(cls, input_dir, page_dict):
+        try:
+            are_variables_present = cls.verify_variable_presence_in_dict(page_dict)
+            if not are_variables_present:
+                print("Variable Presence Verification failed for SG dict")
+                return None
+
+            orig_image_filepath = os.path.join(input_dir, page_dict["orig_image_filename"])
+            if not os.path.exists(orig_image_filepath):
+                print("Image {} not found".format(orig_image_filepath))
+                return None
+
+            page_obj = cls(orig_image_filepath)
+
+            for sg_dict in page_dict["sg_list"]:
+                sg_obj = StaveGroup.make_object_from_dict(page_obj, sg_dict)
+                if sg_obj is not None:
+                    page_obj.add_stave_group(sg_obj)
+                else:
+                    return None
+
+            # -----
+            # TODO: Check if Page obj is consistent with its child SG elements
+            # -----
+            return page_obj
+
+        except Exception:
+            print("Error when making Page Object from dict")
+            print(traceback.format_exc())
+            return None
+
+
+
+    @staticmethod
+    def verify_variable_presence_in_dict(page_dict):
+        try:
+            key_list = ["orig_image_filename",
+                        "sg_list"]
+
+            for k in key_list:
+                if k not in page_dict:
+                    print("Key \"{}\" not found in Page dict".format(k))
+                    return False
+
+        except Exception:
+            print("Error when verifying Page dict")
+            return False
+
+        return True
+
+
+
 
 
     def to_dict(self, json_compatible=False):
