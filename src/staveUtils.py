@@ -1,5 +1,7 @@
 import traceback
 
+import numpy as np
+
 from barUtils import Bar
 
 
@@ -10,8 +12,8 @@ class Stave:
                  left_lim_col=None, right_lim_col=None,
                  parent_group=None):
 
-        self.line_top_edge_rows = line_top_edge_rows
-        self.line_bottom_edge_rows = line_bottom_edge_rows
+        self.line_top_edge_rows = np.array(line_top_edge_rows, dtype="int")
+        self.line_bottom_edge_rows = np.array(line_bottom_edge_rows, dtype="int")
 
         self.assign_parent_group(parent_group)
 

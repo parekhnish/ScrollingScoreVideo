@@ -1,5 +1,6 @@
 import traceback
 
+
 class Bar:
 
     def __init__(self,
