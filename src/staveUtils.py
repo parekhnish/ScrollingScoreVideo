@@ -92,6 +92,27 @@ class Stave:
         return self_dict
 
 
+    def offset_row_lims(self, offset):
+
+        # Offset each line's row lims
+        self.line_top_edge_rows = [r+offset for r in self.line_top_edge_rows]
+        self.line_bottom_edge_rows = [r+offset for r in self.line_bottom_edge_rows]
+
+        # Update overall limits
+        self.top_lim_row = self.line_top_edge_rows[0]
+        self.bottom_lim_row = self.line_bottom_edge_rows[-1]
+
+        return
+
+
+    def adjust_lims_for_new_page_width(self, target_page_width):
+
+        if self.right_lim_col > (target_page_width - 1):
+            self.right_lim_col = target_page_width - 1
+
+        return
+
+
 
 
 class StaveGroup:
@@ -211,6 +232,18 @@ class StaveGroup:
                                  for bar in self.bar_list]
 
         return self_dict
+
+
+    def offset_row_lims(self, offset):
+
+        # Offset the individual staves
+        for stave in self.stave_list:
+            stave.offset_row_lims(offset)
+
+        # Update own limits
+        self.determine_top_bottom_rows()
+
+        return
 
 
     def delete_bar_list(self):
@@ -340,4 +373,16 @@ class StaveGroup:
         self.determine_top_bottom_rows()
         self.num_bars += 1
 
+        return
+
+
+    def adjust_lims_for_new_page_width(self, target_page_width):
+
+        for stave in self.stave_list:
+            stave.adjust_lims_for_new_page_width(target_page_width)
+
+        for bar in self.bar_list:
+            bar.adjust_lims_for_new_page_width(target_page_width)
+
+        self.determine_left_right_cols()
         return

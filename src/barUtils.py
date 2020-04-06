@@ -81,3 +81,14 @@ class Bar:
             self_dict["outer_right_col"] = self.outer_right_col
 
         return self_dict
+
+
+    def adjust_lims_for_new_page_width(self, target_page_width):
+
+
+        if self.outer_right_col > (target_page_width - 1):
+            self.outer_right_col = target_page_width - 1
+            if self.inner_right_col > self.outer_right_col:
+                self.inner_right_col = self.outer_right_col
+
+        return

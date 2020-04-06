@@ -1,8 +1,9 @@
 import os
 import traceback
 
+import numpy as np
 from skimage.color import rgb2gray
-from imageio import imread
+from imageio import imread, imwrite
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -156,6 +157,57 @@ class Page:
         return
 
 
+    def adjust_page_width(self, target_page_width):
+        if self.page_width > target_page_width:
+            self.decrease_page_width(target_page_width)
+
+        elif self.page_width < target_page_width:
+            self.increase_page_width(target_page_width)
+
+        self.page_width = target_page_width
+
+        return
+
+
+    def increase_page_width(self, target_page_width):
+
+        width_diff = target_page_width - self.page_width
+
+        excess_color_array = np.zeros((self.page_height, width_diff, 3), dtype="uint8")
+        self.orig_image = np.concatenate([self.orig_image, excess_color_array], axis=1)
+
+        excess_bin_array = np.zeros((self.page_height, width_diff), dtype="bool")
+        self.bin_image = np.concatenate([self.bin_image, excess_bin_array], axis=1)
+
+        return
+
+
+    def decrease_page_width(self, target_page_width):
+
+        self.orig_image = self.orig_image[:, :target_page_width, :]
+        self.bin_image = self.bin_image[:, :target_page_width]
+
+        self.adjust_lims_for_new_page_width(target_page_width)
+
+        return
+
+
+    def adjust_lims_for_new_page_width(self, target_page_width):
+
+        for sg in self.sg_list:
+            sg.adjust_lims_for_new_page_width(target_page_width)
+
+        return
+
+
+    def offset_row_lims(self, offset):
+
+        for sg in self.sg_list:
+            sg.offset_row_lims(offset)
+
+        return
+
+
     def show_overlays(self):
 
         overlay_image = self.orig_image.copy()
@@ -215,3 +267,44 @@ def binarize_image(sample_img, thresh):
     sample_grayscale_img = (rgb2gray(sample_img) * 255).astype("uint8")
     sample_bin_img = sample_grayscale_img <= thresh
     return sample_bin_img
+
+
+
+def combine_pages_into_one_page(single_page_obj_list,
+                                target_page_width,
+                                single_page_image_folder,
+                                combined_page_image_folder):
+
+    new_single_page_image_list = []
+    new_single_page_obj_list = []
+    running_height = 0
+
+    for page_obj in single_page_obj_list:
+        curr_page_obj = Page.make_object_from_dict(single_page_image_folder,
+                                                   page_obj.to_dict())
+        orig_width = curr_page_obj.page_width
+        orig_height = curr_page_obj.page_height
+
+        if orig_width != target_page_width:
+            curr_page_obj.adjust_page_width(target_page_width)
+
+        curr_page_obj.offset_row_lims(running_height)
+
+        new_single_page_image_list.append(curr_page_obj.orig_image)
+        new_single_page_obj_list.append(curr_page_obj)
+
+        running_height += orig_height
+
+
+    combined_image = np.concatenate(new_single_page_image_list, axis=0)
+    combined_image_filepath = os.path.join(combined_page_image_folder, "combined_page.png")
+    imwrite(combined_image_filepath,
+            combined_image)
+
+    combined_page_obj = Page(combined_image_filepath)
+    for new_single_page_obj in new_single_page_obj_list:
+        for new_sg in new_single_page_obj.sg_list:
+            combined_page_obj.add_stave_group(new_sg)
+
+
+    return combined_page_obj
