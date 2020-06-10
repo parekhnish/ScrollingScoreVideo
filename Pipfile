@@ -10,6 +10,10 @@ matplotlib = "*"
 imageio = "*"
 scikit-image = "*"
 av = "*"
+scipy = "*"
+hsluv = "*"
+simpleaudio = "*"
+pydub = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"
