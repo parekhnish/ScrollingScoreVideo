@@ -2,6 +2,8 @@ import traceback
 
 import numpy as np
 
+from window_filters import ALL_FILTERS_DICT
+
 
 class Bar:
 
@@ -97,126 +99,75 @@ class Bar:
 
 
 
-
-class VizBar(Bar):
+class VizBar:
 
     def __init__(self,
-                 inner_left_col, inner_right_col,
-                 outer_left_col, outer_right_col,
-                 parent_viz_sg,
-                 start_frame, end_frame,
-                 bar_color, bar_alpha):
+                 orig_bar,
+                 musical_start_frame, musical_end_frame,
+                 parent_sg=None):
 
-        super().__init__(inner_left_col, inner_right_col,
-                         outer_left_col, outer_right_col,
-                         parent_viz_sg)
+        self.parent_sg = parent_sg
 
-        self.start_frame = start_frame
-        self.end_frame = end_frame
+        self.orig_bar = orig_bar
+        self.musical_start_frame = musical_start_frame
+        self.musical_end_frame = musical_end_frame
 
-        self.bar_color = bar_color
-        self.bar_alpha = bar_alpha
+        self.actual_start_frame = self.musical_start_frame
+        self.actual_end_frame = self.musical_end_frame
+
+        self.left_lim = self.orig_bar.outer_left_col
+        self.right_lim = self.orig_bar.outer_right_col
+
+        self.compute_bar_dimensions()
+
+        self.filter_obj_list = []
+
+
+    def assign_parent(self, parent_sg):
+        self.parent_sg = parent_sg
+        self.compute_bar_dimensions()
+        return
+
+
+    def compute_bar_dimensions(self):
+
+        self.bar_left_col = self.left_lim
+        self.bar_right_col = self.right_lim
+        self.bar_width = self.bar_right_col - self.bar_left_col + 1
+
+        if self.parent_sg is None:
+            self.bar_top_row = None
+            self.bar_bottom_row = None
+            self.bar_height = None
+        else:
+            self.bar_top_row = self.parent_sg.top_row
+            self.bar_bottom_row = self.parent_sg.bottom_row
+            self.bar_height = self.bar_bottom_row - self.bar_top_row + 1
 
         return
 
-    @staticmethod
-    def verify_variable_presence_in_dict(viz_bar_dict):
 
-        try:
-            base_variables_present = super(VizBar, VizBar).verify_variable_presence_in_dict(viz_bar_dict)
-            if not base_variables_present:
-                return False
+    def add_filter_obj(self, filter_name, filter_args_dict):
 
-            key_list = ["start_frame", "end_frame",
-                        "bar_color", "bar_alpha"]
+        filter_class = ALL_FILTERS_DICT[filter_name]
+        filter_obj = filter_class(self, **filter_args_dict)
+        self.filter_obj_list.append(filter_obj)
+        self.actual_start_frame = min(self.actual_start_frame, filter_obj.frame_anchor_list[0])
+        self.actual_end_frame = max(self.actual_end_frame, filter_obj.frame_anchor_list[-1])
 
-            for k in key_list:
-                if k not in viz_bar_dict:
-                    print("Key \"{}\" not found in Bar dict".format(k))
-                    raise
-
-        except Exception:
-            print("Error when verifying Viz Bar dict")
-            return False
-
-        return True
+        return
 
 
-    @classmethod
-    def make_object_from_dict(cls, viz_sg_obj, viz_bar_dict):
-        try:
-            are_variables_present = cls.verify_variable_presence_in_dict(viz_bar_dict)
-            if not are_variables_present:
-                print("Variable Presence Verification failed for Viz Bar dict")
-                return None
+    def get_bar_image_at_frame(self, frame_number):
 
-            viz_bar_obj = cls(viz_bar_dict["inner_left_col"],
-                              viz_bar_dict["inner_right_col"],
-                              viz_bar_dict["outer_left_col"],
-                              viz_bar_dict["outer_right_col"],
-                              viz_sg_obj,
-                              viz_bar_dict["start_frame"],
-                              viz_bar_dict["end_frame"],
-                              viz_bar_dict["bar_color"],
-                              viz_bar_dict["bar_alpha"])
+        output_color_image = np.ones((self.bar_height, self.bar_width, 3), dtype="uint8") * 255
+        output_opacity_mask = np.zeros((self.bar_height, self.bar_width), dtype="float")
 
-            return viz_bar_obj
+        # If it is the first or the last frame, let all outputs be the default
+        if (frame_number > self.actual_start_frame) and (frame_number < self.actual_end_frame):
 
-        except Exception:
-            print("Error when making Viz Bar Object from dict")
-            print(traceback.format_exc())
-            return None
+            for filter_obj in self.filter_obj_list:
+                filter_obj.apply_filter(output_color_image, output_opacity_mask, frame_number)
 
 
-    def to_dict(self, json_compatible=False):
-
-        output_dict = super().to_dict(json_compatible)
-
-        output_dict["bar_color"] = self.bar_color
-
-        if json_compatible:
-            output_dict["start_frame"] = int(self.start_frame)
-            output_dict["end_frame"] = int(self.end_frame)
-
-            output_dict["bar_alpha"] = float(self.bar_alpha)
-
-        else:
-            output_dict["start_frame"] = self.start_frame
-            output_dict["end_frame"] = self.end_frame
-
-            output_dict["bar_alpha"] = self.bar_alpha
-
-
-        return output_dict
-
-
-    @staticmethod
-    def make_viz_bar_from_bar(bar_obj,
-                              start_frame=0, end_frame=1,
-                              bar_color=None, bar_alpha=None,
-                              parent_viz_sg=None):
-
-        viz_bar_dict = bar_obj.to_dict()
-
-        viz_bar_dict["start_frame"] = start_frame
-        viz_bar_dict["end_frame"] = end_frame
-
-        if bar_color is not None:
-            viz_bar_dict["bar_color"] = bar_color
-        else:
-            hex_char_str = "0123456789abcdef"
-            random_color = "#"
-            for i in range(6):
-                random_char = hex_char_str[int(np.random.rand() * 16)]
-                random_color += random_char
-            viz_bar_dict["bar_color"] = random_color
-
-
-        if bar_alpha is not None:
-            viz_bar_dict["bar_alpha"] = bar_alpha
-        else:
-            viz_bar_dict["bar_alpha"] = np.random.rand()
-
-        viz_bar_obj = VizBar.make_object_from_dict(parent_viz_sg, viz_bar_dict)
-
-        return viz_bar_obj
+        return output_color_image, output_opacity_mask

@@ -7,7 +7,7 @@ from imageio import imread, imwrite
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-from staveUtils import StaveGroup, VizStaveGroup
+from staveUtils import StaveGroup
 
 
 SG_OVERLAY_COLOR = "teal"
@@ -262,116 +262,6 @@ class Page:
         return
 
 
-class VizPage(Page):
-
-
-    def __init__(self, orig_image_filepath=None,
-                 sg_list=None):
-
-        super().__init__(orig_image_filepath, sg_list)
-        return
-
-
-    @classmethod
-    def make_object_from_dict(cls, input_dir, viz_page_dict):
-        try:
-            are_variables_present = cls.verify_variable_presence_in_dict(viz_page_dict)
-            if not are_variables_present:
-                print("Variable Presence Verification failed for Viz Page Dict")
-                return None
-
-            orig_image_filepath = os.path.join(input_dir, viz_page_dict["orig_image_filename"])
-            if not os.path.exists(orig_image_filepath):
-                print("Image {} not found".format(orig_image_filepath))
-                return None
-
-            page_obj = cls(orig_image_filepath)
-
-            for viz_sg_dict in viz_page_dict["sg_list"]:
-                viz_sg_obj = VizStaveGroup.make_object_from_dict(page_obj, viz_sg_dict)
-                if viz_sg_obj is not None:
-                    page_obj.add_stave_group(viz_sg_obj)
-                else:
-                    return None
-
-            # -----
-            # TODO: Check if Page obj is consistent with its child SG elements
-            # -----
-            return page_obj
-
-        except Exception:
-            print("Error when making Viz Page Object from dict")
-            print(traceback.format_exc())
-            return None
-
-
-    def show_overlays(self):
-
-        overlay_image = self.orig_image.copy()
-
-        figure = plt.figure()
-        ax = plt.gca()
-        ax.imshow(overlay_image)
-
-        for viz_sg in self.sg_list:
-
-            top_row = viz_sg.top_lim_row - viz_sg.offset_viz_top_row
-            bottom_row = viz_sg.bottom_lim_row + viz_sg.offset_viz_bottom_row
-
-            if viz_sg.num_bars > 0:
-                for bar_idx, viz_bar in enumerate(viz_sg.bar_list):
-                    left_col = viz_bar.outer_left_col
-                    right_col = viz_bar.outer_right_col
-
-                    curr_bar_overlay = patches.Rectangle((left_col - 1, top_row - 1),
-                                                         right_col - left_col + 1,
-                                                         bottom_row - top_row + 1,
-                                                         color=viz_bar.bar_color,
-                                                         alpha=viz_bar.bar_alpha)
-                    ax.add_patch(curr_bar_overlay)
-
-            else:
-                if viz_sg.left_lim_col is None:
-                    left_col = 0
-                else:
-                    left_col = viz_sg.left_lim_col
-
-                if viz_sg.right_lim_col is None:
-                    right_col = self.page_width - 1
-                else:
-                    right_col = viz_sg.right_lim_col
-
-                curr_sg_overlay = patches.Rectangle((left_col-1, top_row-1),
-                                                    right_col-left_col + 1,
-                                                    bottom_row-top_row + 1,
-                                                    color=SG_OVERLAY_COLOR,
-                                                    alpha=SG_OVERLAY_ALPHA)
-                ax.add_patch(curr_sg_overlay)
-
-        plt.show()
-        plt.close()
-
-        return
-
-
-    @staticmethod
-    def make_viz_page_from_page(page_obj,
-                                input_dir):
-
-        viz_page_dict = page_obj.to_dict()
-
-        viz_page_dict["sg_list"] = []
-
-        viz_page_obj = VizPage.make_object_from_dict(input_dir, viz_page_dict)
-
-        for sg_obj in page_obj.sg_list:
-            viz_sg_obj = VizStaveGroup.make_viz_sg_from_sg(sg_obj)
-            viz_page_obj.add_stave_group(viz_sg_obj)
-
-        return viz_page_obj
-
-
-
 
 def binarize_image(sample_img, thresh):
     sample_grayscale_img = (rgb2gray(sample_img) * 255).astype("uint8")
@@ -418,45 +308,3 @@ def combine_pages_into_one_page(single_page_obj_list,
 
 
     return combined_page_obj
-
-
-
-
-def combine_vizpages_into_one_vizpage(single_viz_page_obj_list,
-                                      target_page_width,
-                                      single_viz_page_image_folder,
-                                      combined_viz_page_image_folder):
-
-    new_single_viz_page_image_list = []
-    new_single_viz_page_obj_list = []
-    running_height = 0
-
-    for viz_page_obj in single_viz_page_obj_list:
-        curr_viz_page_obj = VizPage.make_object_from_dict(single_viz_page_image_folder,
-                                                      viz_page_obj.to_dict())
-        orig_width = curr_viz_page_obj.page_width
-        orig_height = curr_viz_page_obj.page_height
-
-        if orig_width != target_page_width:
-            curr_viz_page_obj.adjust_page_width(target_page_width)
-
-        curr_viz_page_obj.offset_row_lims(running_height)
-
-        new_single_viz_page_image_list.append(curr_viz_page_obj.orig_image)
-        new_single_viz_page_obj_list.append(curr_viz_page_obj)
-
-        running_height += orig_height
-
-
-    combined_image = np.concatenate(new_single_viz_page_image_list, axis=0)
-    combined_image_filepath = os.path.join(combined_viz_page_image_folder, "combined_page.png")
-    imwrite(combined_image_filepath,
-            combined_image)
-
-    combined_viz_page_obj = VizPage(combined_image_filepath)
-    for new_single_viz_page_obj in new_single_viz_page_obj_list:
-        for new_viz_sg in new_single_viz_page_obj.sg_list:
-            combined_viz_page_obj.add_stave_group(new_viz_sg)
-
-
-    return combined_viz_page_obj

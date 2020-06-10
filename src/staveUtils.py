@@ -2,7 +2,7 @@ import traceback
 
 import numpy as np
 
-from barUtils import Bar, VizBar
+from barUtils import Bar
 
 
 class Stave:
@@ -389,131 +389,31 @@ class StaveGroup:
 
 
 
-
-class VizStaveGroup(StaveGroup):
+class VizStaveGroup:
 
     def __init__(self,
-                 stave_list=None, bar_list=None,
-                 parent_page=None,
-                 offset_viz_top_row=None, offset_viz_bottom_row=None):
+                 orig_sg,
+                 offset_top_row,
+                 offset_bottom_row,
+                 viz_bar_list=None):
 
-        super().__init__(stave_list, bar_list, parent_page)
+        self.orig_sg = orig_sg
+        self.offset_top_row = offset_top_row
+        self.offset_bottom_row = offset_bottom_row
 
-        self.offset_viz_top_row = offset_viz_top_row
-        self.offset_viz_bottom_row = offset_viz_bottom_row
-
-        return
-
-
-    @staticmethod
-    def verify_variable_presence_in_dict(viz_sg_dict):
-
-        try:
-            base_variables_present = super(VizStaveGroup, VizStaveGroup).verify_variable_presence_in_dict(viz_sg_dict)
-            if not base_variables_present:
-                return False
-
-            key_list = ["offset_viz_top_row", "offset_viz_bottom_row"]
-
-            for k in key_list:
-                if k not in viz_sg_dict:
-                    print("Key \"{}\" not found in Viz Stave Group dict".format(k))
-                    return False
-
-        except Exception:
-            print("Error when verifying Viz Stave Group dict")
-            print(traceback.format_exc())
-            return False
-
-        return True
+        self.top_row = self.orig_sg.top_lim_row - self.offset_top_row
+        self.bottom_row = self.orig_sg.bottom_lim_row + self.offset_top_row
 
 
-    @classmethod
-    def make_object_from_dict(cls, page_obj, viz_sg_dict):
-
-        try:
-            are_variables_present = cls.verify_variable_presence_in_dict(viz_sg_dict)
-            if not are_variables_present:
-                print("Variable Presence Verification failed for Viz SG dict")
-                return None
-
-            viz_sg_obj = cls(parent_page=page_obj,
-                             offset_viz_top_row=viz_sg_dict["offset_viz_top_row"],
-                             offset_viz_bottom_row=viz_sg_dict["offset_viz_bottom_row"])
-
-            for stave_dict in viz_sg_dict["stave_list"]:
-                stave_obj = Stave.make_object_from_dict(viz_sg_obj, stave_dict)
-                if stave_obj is not None:
-                    viz_sg_obj.add_stave(stave_obj)
-                else:
-                    return None
-
-            for viz_bar_dict in viz_sg_dict["bar_list"]:
-                viz_bar_obj = VizBar.make_object_from_dict(viz_sg_obj, viz_bar_dict)
-                if viz_bar_obj is not None:
-                    viz_sg_obj.add_bar(viz_bar_obj)
-                else:
-                    return None
-
-            # -----
-            # TODO: Check if SG obj is consistent with its child Stave and Bar
-            #       elements
-            # -----
-            return viz_sg_obj
-
-        except Exception:
-            print("Error when making Viz Stave Group Object from dict")
-            print(traceback.format_exc())
-            return None
-
-
-    def to_dict(self, json_compatible=False):
-
-        output_dict = super().to_dict(json_compatible)
-
-        if json_compatible:
-            output_dict["offset_viz_top_row"] = int(self.offset_viz_top_row)
-            output_dict["offset_viz_bottom_row"] = int(self.offset_viz_bottom_row)
-
+        if viz_bar_list is None:
+            self.viz_bar_list = []
         else:
-            output_dict["offset_viz_top_row"] = self.offset_viz_top_row
-            output_dict["offset_viz_bottom_row"] = self.offset_viz_bottom_row
+            self.viz_bar_list = viz_bar_list
 
-        return output_dict
-
-
-    def determine_top_bottom_rows(self):
-
-        super().determine_top_bottom_rows()
-
-        if ((self.top_lim_row is not None) and
-            ((self.top_lim_row - self.offset_viz_top_row) < 0)):
-            self.offset_viz_top_row = -self.top_lim_row
-
-        if ((self.bottom_lim_row is not None) and
-            (self.parent_page is not None) and
-            ((self.bottom_lim_row + self.offset_viz_bottom_row) > self.parent_page.page_height)):
-            self.offset_viz_bottom_row = self.parent_page.page_height - self.bottom_lim_row
 
         return
 
 
-    @staticmethod
-    def make_viz_sg_from_sg(sg_obj,
-                            offset_viz_top_row=10, offset_viz_bottom_row=10,
-                            parent_viz_page=None):
-
-        viz_sg_dict = sg_obj.to_dict()
-
-        viz_sg_dict["offset_viz_top_row"] = offset_viz_top_row
-        viz_sg_dict["offset_viz_bottom_row"] = offset_viz_bottom_row
-
-        viz_sg_dict["bar_list"] = []
-
-        viz_sg_obj = VizStaveGroup.make_object_from_dict(parent_viz_page, viz_sg_dict)
-
-        for bar_obj in sg_obj.bar_list:
-            viz_bar_obj = VizBar.make_viz_bar_from_bar(bar_obj)
-            viz_sg_obj.add_bar(viz_bar_obj)
-
-        return viz_sg_obj
+    def add_viz_bar(self, viz_bar):
+        viz_bar.assign_parent(self)
+        self.viz_bar_list.append(viz_bar)
